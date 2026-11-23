@@ -1,6 +1,8 @@
 import { Schema, model, Document } from "mongoose";
 import { DocGia } from "../types/types.js";
-export interface IDocGia extends Omit<DocGia, "_id">, Document {}
+export interface IDocGia extends Omit<DocGia, "_id">, Document {
+    PASSWORD: string;
+}
 
 const docgiaSchema = new Schema<IDocGia>(
     {
@@ -8,6 +10,7 @@ const docgiaSchema = new Schema<IDocGia>(
         HOLOT: { type: String, required: true, trim: true },
         TEN: { type: String, required: true, trim: true },
         NGAYSINH: { type: Date, required: true },
+        PASSWORD: { type: String, required: true, trim: true, select: false },
         PHAI: { type: String, required: true, trim: true },
         DIACHI: { type: String, trim: true },
         DIENTHOAI: { type: String, trim: true },

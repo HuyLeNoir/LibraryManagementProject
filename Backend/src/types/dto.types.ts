@@ -6,7 +6,9 @@ type BaseSystemFields = "_id" | "createdAt" | "updatedAt";
 export type CreateSachPayload = Omit<Sach, BaseSystemFields>;
 export type UpdateSachPayload = Partial<CreateSachPayload>;
 
-export type CreateDocGiaPayload = Omit<DocGia, BaseSystemFields>;
+export type CreateDocGiaPayload = Omit<DocGia, BaseSystemFields | "MADOCGIA"> & {
+    PASSWORD: string;
+};
 export type UpdateDocGiaPayload = Partial<CreateDocGiaPayload>;
 
 export type CreateNhaXuatBanPayload = Omit<NhaXuatBan, BaseSystemFields>;

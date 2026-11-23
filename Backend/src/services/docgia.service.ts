@@ -23,7 +23,7 @@ export class DocGiaService {
     private static toDocGiaList(docs: IDocGia[]): DocGia[] {
         return docs.map((doc) => this.toDocGia(doc));
     }
-    private static async generateMaDocGia(): Promise<string> {
+    static async generateMaDocGia(): Promise<string> {
         const latest = await DocGiaModel.findOne({ MADOCGIA: /^DG\d+$/ })
             .sort({ MADOCGIA: -1 })
             .select("MADOCGIA")

@@ -5,7 +5,8 @@ import { CreateDocGiaPayload } from "../types/dto.types.js";
 import { LoginResult, JwtPayloadData, NhanVien, DocGia } from "../types/types.js";
 import { DocGiaModel } from "../models/docgia.model.js";
 import { verify } from "node:crypto";
-import { verifyPassword } from "../utils/utils.js";
+import { hashPassword, verifyPassword } from "../utils/utils.js";
+import { DocGiaService } from "./docgia.service.js";
 const JWT_SECRET = process.env.JWT_SECRET || "skibidi";
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "1d") as SignOptions["expiresIn"];
 
@@ -52,14 +53,14 @@ export class AuthService {
             throw new AppError("Vui lòng nhập mã đọc giả", 400);
         }
 
-        const docgia = await DocGiaModel.findOne({ MADOCGIA }).select("+Password");
+        const docgia = await DocGiaModel.findOne({ MADOCGIA }).select("+PASSWORD");
         if (!docgia) {
-            throw new AppError("Mã đọc giả hoặc mật khẩu không đúng", 401);
+            throw new AppError("Không tồn tại đọc giả", 401);
         }
 
-        const isPasswordValid = Password === "123";
+        const isPasswordValid = verifyPassword(Password, docgia.PASSWORD);
         if (!isPasswordValid) {
-            throw new AppError("Mã đọc giả hoặc mật khẩu không đúng", 401);
+            throw new AppError("Mật khẩu sai", 401);
         }
 
         const payload: JwtPayloadData = {
@@ -88,7 +89,9 @@ export class AuthService {
         if (!Payload) {
             throw new AppError("Vui Không có payload", 400);
         }
-        const docgia = await DocGiaModel.create(Payload);
+        Payload.PASSWORD = hashPassword(Payload.PASSWORD);
+        const MADOCGIA = await DocGiaService.generateMaDocGia();
+        const docgia = await DocGiaModel.create({ ...Payload, MADOCGIA });
         const payload: JwtPayloadData = {
             role: "docgia",
         };
