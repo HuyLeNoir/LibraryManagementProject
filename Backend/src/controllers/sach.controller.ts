@@ -3,7 +3,7 @@ import { ApiResponse } from "../types/api.types.js";
 import { SachService } from "../services/sach.service.js";
 import { CreateSachPayload, UpdateSachPayload } from "../types/dto.types.js";
 import { Sach } from "../types/types.js";
-export class NhaXuatBanController {
+export class SachController {
     // GET /api/sach
     static async GetAll(
         req: Request<{}, {}, {}, { page: string; limit: string; keyword: string }>,
@@ -28,16 +28,16 @@ export class NhaXuatBanController {
     }
     // GET /api/sach/:masach
     static async GetById(
-        req: Request<{ manxb: string }>,
+        req: Request<{ masach: string }>,
         res: Response<ApiResponse<Sach>>,
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { manxb } = req.params;
-            const result = await SachService.getById(manxb);
+            const { masach } = req.params;
+            const result = await SachService.getById(masach);
             res.status(200).json({
                 success: true,
-                message: `Lấy thông tin NXB với manxb=${manxb} thành công`,
+                message: `Lấy thông tin NXB với manxb=${masach} thành công`,
                 data: result,
             });
         } catch (error) {

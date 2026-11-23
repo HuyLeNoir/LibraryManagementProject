@@ -9,7 +9,7 @@ import { CreateMuonSachPayload, UpdateMuonSachPayload } from "../types/dto.types
 import { TheoDoiMuonSach } from "../types/types.js";
 
 export class TheoDoiMuonSachController {
-    // GET /api/nhanvien/theo-doi-muon-sach
+    // GET /api/theo-doi-muon-sach
     static async GetAll(
         req: Request<{}, {}, {}, { page?: string; limit?: string; keyword?: string }>,
         res: Response<ApiResponse<TheoDoiMuonSachChiTiet[]>>,
@@ -33,7 +33,7 @@ export class TheoDoiMuonSachController {
         }
     }
 
-    // GET /api/nhanvien/theo-doi-muon-sach/expired
+    // GET /api/theo-doi-muon-sach/expired
     static async GetExpired(
         req: Request<{}, {}, {}, { page?: string; limit?: string; keyword?: string }>,
         res: Response<ApiResponse<TheoDoiMuonSachChiTiet[]>>,
@@ -57,7 +57,7 @@ export class TheoDoiMuonSachController {
         }
     }
 
-    // GET /api/docgia/:maDocGia/danhsachmuon
+    // GET /api/:maDocGia/danh-sach-muon
     static async GetByMaDocGia(
         req: Request<
             { maDocGia: string },
@@ -70,6 +70,9 @@ export class TheoDoiMuonSachController {
     ): Promise<void> {
         try {
             const { maDocGia } = req.params;
+            if (!(req.user.maDocGia === maDocGia)) {
+                throw new AppError("Bạn không thể xem lịch sử mượn của người khác", 403);
+            }
             const tinhTrang =
                 typeof req.query.tinhTrang === "string" && req.query.tinhTrang.trim().length > 0
                     ? req.query.tinhTrang.trim()
@@ -95,7 +98,7 @@ export class TheoDoiMuonSachController {
         }
     }
 
-    // GET /api/muon-sach/:maDocGia/:maSach
+    // GET /api/theo-doio-muon-sach/:maDocGia/:maSach
     static async GetById(
         req: Request<{ maDocGia: string; maSach: string }>,
         res: Response<ApiResponse<TheoDoiMuonSach | null>>,
