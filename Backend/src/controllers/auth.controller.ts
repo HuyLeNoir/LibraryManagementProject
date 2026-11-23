@@ -5,7 +5,7 @@ import { LoginResult } from "../types/types.js";
 import { AuthService } from "../services/auth.service.js";
 import { CreateDocGiaPayload } from "../types/dto.types.js";
 export class AuthController {
-    //GET /api/staff/login
+    //GET /api/login/staff
     static async loginNhanVien(
         req: Request,
         res: Response<ApiResponse<LoginResult>>,

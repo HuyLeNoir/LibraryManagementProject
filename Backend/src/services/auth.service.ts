@@ -4,6 +4,8 @@ import { NhanVienModel } from "../models/nhanvien.model.js";
 import { CreateDocGiaPayload } from "../types/dto.types.js";
 import { LoginResult, JwtPayloadData, NhanVien, DocGia } from "../types/types.js";
 import { DocGiaModel } from "../models/docgia.model.js";
+import { verify } from "node:crypto";
+import { verifyPassword } from "../utils/utils.js";
 const JWT_SECRET = process.env.JWT_SECRET || "skibidi";
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "1d") as SignOptions["expiresIn"];
 
@@ -13,12 +15,12 @@ export class AuthService {
             throw new AppError("Vui lòng nhập mã số nhân viên và mật khẩu", 400);
         }
 
-        const nhanvien = await NhanVienModel.findOne({ MSNV }).select("+Password");
+        const nhanvien = await NhanVienModel.findOne({ MSNV: MSNV.trim() }).select("+Password");
         if (!nhanvien) {
             throw new AppError("Mã số nhân viên hoặc mật khẩu không đúng", 401);
         }
 
-        const isPasswordValid = Password === nhanvien.Password;
+        const isPasswordValid = verifyPassword(Password, nhanvien.Password);
         if (!isPasswordValid) {
             throw new AppError("Mã số nhân viên hoặc mật khẩu không đúng", 401);
         }

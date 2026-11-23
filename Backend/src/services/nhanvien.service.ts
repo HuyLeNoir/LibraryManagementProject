@@ -3,7 +3,7 @@ import { PaginatedData } from "../types/api.types.js";
 import { NhanVienModel, INhanVienDocument } from "../models/nhanvien.model.js";
 import { CreateNhanVienPayload, UpdateNhanVienPayload } from "../types/dto.types.js";
 import { NhanVien } from "../types/types.js";
-import { escapeRegex } from "../utils/utils.js";
+import { escapeRegex, hashPassword } from "../utils/utils.js";
 
 interface DanhSachNhanVien {
     DS_NhanVien: NhanVien[];
@@ -66,6 +66,9 @@ export class NhanVienService {
         if (!data || Object.keys(data).length === 0) {
             throw new AppError("Không có dữ liệu để cập nhật", 404);
         }
+        if (data.Password) {
+            data.Password = hashPassword(data.Password);
+        }
         return await NhanVienModel.create(data);
     }
 
@@ -78,7 +81,7 @@ export class NhanVienService {
             { MSNV },
             { $set: data },
             {
-                new: true, // Trả về document sau khi đã update
+                returnDocument: "after", // Trả về document sau khi đã update
                 runValidators: true, // Kiểm tra validate schema khi update
             },
         ).lean();

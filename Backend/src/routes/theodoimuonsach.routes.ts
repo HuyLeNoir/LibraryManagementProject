@@ -9,7 +9,7 @@ router
     .post(authenticate, authorize(["docgia", "nhanvien"]), TheoDoiMuonSachController.create);
 //api/theo-doi-muon-sach/:madocgia/:masach/
 router
-    .route("/:maDocGia/:MaSach")
+    .route("/:maDocGia/:maSach")
     .get(authenticate, authorize(["nhanvien", "docgia"]), TheoDoiMuonSachController.GetById)
     .put(authenticate, authorize(["nhanvien"]), TheoDoiMuonSachController.update)
     .delete(authenticate, authorize(["nhanvien"]), TheoDoiMuonSachController.delete);

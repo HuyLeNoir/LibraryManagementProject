@@ -121,7 +121,7 @@ export class TheoDoiMuonSachController {
     // POST /api/muon-sach
     static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const data = this.parseToCreateMuonSachPayload(req.body);
+            const data = TheoDoiMuonSachController.parseToCreateMuonSachPayload(req.body);
             const created = await TheoDoiMuonSachService.create(data);
 
             res.status(201).json({
@@ -142,7 +142,7 @@ export class TheoDoiMuonSachController {
     ): Promise<void> {
         try {
             const { maDocGia, maSach } = req.params;
-            const data = this.parseToUpdateMuonSachPayload(req.body);
+            const data = TheoDoiMuonSachController.parseToUpdateMuonSachPayload(req.body);
             const updated = await TheoDoiMuonSachService.update(maDocGia, maSach, data);
 
             res.status(200).json({

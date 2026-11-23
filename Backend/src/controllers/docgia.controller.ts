@@ -32,18 +32,18 @@ export class DocGiaController {
             next(error);
         }
     }
-    // GET /api/docgia/:madocgia
+    // GET /api/docgia/:maDocGia
     static async GetDocGiaByMaDocGia(
-        req: Request<{ madocgia: string }>,
+        req: Request<{ maDocGia: string }>,
         res: Response<ApiResponse<DocGia>>,
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { madocgia } = req.params;
-            const result = await DocGiaService.getById(madocgia);
+            const { maDocGia } = req.params;
+            const result = await DocGiaService.getById(maDocGia);
             res.status(200).json({
                 success: true,
-                message: `Lấy thông tin người dùng với madocgia=${madocgia} thành công`,
+                message: `Lấy thông tin người dùng với maDocGia=${maDocGia} thành công`,
                 data: result,
             });
         } catch (error) {
@@ -67,17 +67,17 @@ export class DocGiaController {
         }
     }
 
-    // PUT /api/docgia/:madocgia
+    // PUT /api/docgia/:maDocGia
     static async update(
-        req: Request<{ madocgia: string }>,
+        req: Request<{ maDocGia: string }>,
         res: Response,
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { madocgia } = req.params;
+            const { maDocGia } = req.params;
             const data = req.body as UpdateDocGiaPayload;
 
-            const updatedDocGia = await DocGiaService.update(madocgia, data);
+            const updatedDocGia = await DocGiaService.update(maDocGia, data);
 
             res.status(200).json({
                 success: true,
@@ -89,16 +89,16 @@ export class DocGiaController {
         }
     }
 
-    // DELETE /api/docgia/:madocgia
+    // DELETE /api/docgia/:maDocGia
     static async delete(
-        req: Request<{ madocgia: string }>,
+        req: Request<{ maDocGia: string }>,
         res: Response,
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { madocgia } = req.params;
+            const { maDocGia } = req.params;
 
-            const deletedDocGia = await DocGiaService.delete(madocgia);
+            const deletedDocGia = await DocGiaService.delete(maDocGia);
 
             res.status(200).json({
                 success: true,

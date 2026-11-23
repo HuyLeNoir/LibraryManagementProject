@@ -63,15 +63,15 @@ export class SachController {
 
     // PUT /api/sach/:masach
     static async update(
-        req: Request<{ manxb: string }>,
+        req: Request<{ masach: string }>,
         res: Response,
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { manxb } = req.params;
+            const { masach } = req.params;
             const data = req.body as UpdateSachPayload;
 
-            const updatedNXB = await SachService.update(manxb, data);
+            const updatedNXB = await SachService.update(masach, data);
 
             res.status(200).json({
                 success: true,
@@ -85,14 +85,14 @@ export class SachController {
 
     // DELETE /api/sach/:masach
     static async delete(
-        req: Request<{ manxb: string }>,
+        req: Request<{ masach: string }>,
         res: Response,
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { manxb } = req.params;
+            const { masach } = req.params;
 
-            const deletedNXB = await SachService.delete(manxb);
+            const deletedNXB = await SachService.delete(masach);
 
             res.status(200).json({
                 success: true,

@@ -36,7 +36,7 @@ export class TheoDoiMuonSachService {
 
             {
                 $lookup: {
-                    from: "Sach",
+                    from: "saches",
                     localField: "MASACH",
                     foreignField: "MASACH",
                     as: "SACH_MATCHED",
@@ -50,7 +50,7 @@ export class TheoDoiMuonSachService {
             },
             {
                 $lookup: {
-                    from: "DocGia",
+                    from: "docgias",
                     localField: "MADOCGIA",
                     foreignField: "MADOCGIA",
                     as: "DOCGIA_MATCHED",
@@ -130,7 +130,7 @@ export class TheoDoiMuonSachService {
             { $limit: limit },
             {
                 $lookup: {
-                    from: "Sach",
+                    from: "saches",
                     localField: "MASACH",
                     foreignField: "MASACH",
                     as: "Sach_matched",
@@ -219,7 +219,7 @@ export class TheoDoiMuonSachService {
 
             {
                 $lookup: {
-                    from: "Sach",
+                    from: "saches",
                     localField: "MASACH",
                     foreignField: "MASACH",
                     as: "SACH_MATCHED",
@@ -233,7 +233,7 @@ export class TheoDoiMuonSachService {
             },
             {
                 $lookup: {
-                    from: "DocGia",
+                    from: "docgias",
                     localField: "MADOCGIA",
                     foreignField: "MADOCGIA",
                     as: "DOCGIA_MATCHED",
@@ -295,7 +295,7 @@ export class TheoDoiMuonSachService {
         data: UpdateMuonSachPayload,
     ): Promise<ITheoDoiMuonSachDocument | null> {
         return await TheoDoiMuonSachModel.findOneAndUpdate({ MADOCGIA, MASACH }, data, {
-            new: true, // Trả về document sau khi đã update
+            returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         });
     }

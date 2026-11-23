@@ -103,7 +103,7 @@ export class DocGiaService {
             throw new AppError("Không có dữ liệu để cập nhật", 400);
         }
         const updatedDocGia = await DocGiaModel.findOneAndUpdate({ MADOCGIA }, data, {
-            new: true, // Trả về document sau khi đã update
+            returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         }).lean<IDocGia>();
         if (!updatedDocGia) {

@@ -72,7 +72,7 @@ export class NhaXuatBanService {
     // UPDATE
     static async update(MANXB: string, data: UpdateNhaXuatBanPayload): Promise<NhaXuatBan | null> {
         const updatedNXB = await NhaXuatBanModel.findOneAndUpdate({ MANXB }, data, {
-            new: true, // Trả về document sau khi đã update
+            returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         });
         if (!updatedNXB) {

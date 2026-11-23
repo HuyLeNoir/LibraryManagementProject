@@ -109,7 +109,7 @@ export class NhanVienControler {
     // POST /api/nhanvien
     static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const data = this.parseToCreateNhanVienPayload(req.body);
+            const data = NhanVienControler.parseToCreateNhanVienPayload(req.body);
             const newNhanVien = await NhanVienService.create(data);
 
             res.status(201).json({
@@ -130,7 +130,7 @@ export class NhanVienControler {
     ): Promise<void> {
         try {
             const { msnv } = req.params;
-            const data = this.parseToUpdateNhanVienPayload(req.body);
+            const data = NhanVienControler.parseToUpdateNhanVienPayload(req.body);
             const updatedNXB = await NhanVienService.update(msnv, data);
             res.status(200).json({
                 success: true,

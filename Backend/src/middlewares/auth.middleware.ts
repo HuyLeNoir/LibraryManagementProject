@@ -21,7 +21,7 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
 
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayloadData;
 
-        if (!decoded?.MSNV || !decoded?.role) {
+        if (!decoded?.role) {
             throw new AppError("Payload trong token không hợp lệ", 401);
         }
 

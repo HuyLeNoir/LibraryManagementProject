@@ -18,7 +18,6 @@ interface DanhSachSach {
     pagination: PaginatedData;
 }
 export class SachService {
-    private static readonly NXB_COLLECTION = "NhaXuatBan"; // đổi đúng tên collection NXB nếu khác
     private static toSachWithNXB(doc: SachAggregatedRow): SachWithNXB {
         return {
             MASACH: doc.MASACH,
@@ -46,7 +45,7 @@ export class SachService {
         return [
             {
                 $lookup: {
-                    from: this.NXB_COLLECTION,
+                    from: "nhaxuatbans",
                     localField: "MANXB",
                     foreignField: "MANXB",
                     as: "nxbList",
@@ -134,7 +133,7 @@ export class SachService {
             throw new AppError("Không nhận được mã sách để cập nhật", 404);
         }
         const updatedSach = await SachModel.findOneAndUpdate({ MASACH }, data, {
-            new: true, // Trả về document sau khi đã update
+            returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         });
         if (!updatedSach) {
