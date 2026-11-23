@@ -9,6 +9,7 @@ const sachSchema = new Schema<ISachDocument>(
         DONGIA: { type: Number, required: true, min: 0 },
         SOQUYEN: { type: Number, required: true, min: 0, default: 0 },
         MANXB: { type: String, required: true, trim: true },
+        NAMXUATBAN: { type: Number, required: true },
         NGUONGOCTACGIA: { type: String, trim: true },
     },
     { timestamps: true },

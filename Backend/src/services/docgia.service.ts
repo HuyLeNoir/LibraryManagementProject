@@ -48,7 +48,7 @@ export class DocGiaService {
         if (trimmedKeyword.length > 0) {
             const regex = new RegExp(escapeRegex(trimmedKeyword), "i");
             conditions.push({
-                $or: [{ MADOCGIA: trimmedKeyword }, { HOTEN: regex }],
+                $or: [{ MADOCGIA: trimmedKeyword }, { TEN: regex }],
             });
         }
 
@@ -77,7 +77,7 @@ export class DocGiaService {
         if (!MaDocGia?.trim()) {
             throw new AppError("Mã độc giả không hợp lệ", 400);
         }
-        const docgia = await DocGiaModel.findOne({ MaDocGia }).lean<IDocGia>();
+        const docgia = await DocGiaModel.findOne({ MADOCGIA: MaDocGia }).lean<IDocGia>();
         if (!docgia) {
             throw new AppError("Độc giả không tồn tại", 404);
         }

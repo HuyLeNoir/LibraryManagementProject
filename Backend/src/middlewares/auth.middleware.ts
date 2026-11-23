@@ -4,7 +4,7 @@ import { UserRole } from "../types/types.js";
 import { AppError } from "../utils/appError.js";
 import type { JwtPayloadData } from "../types/types.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
+const JWT_SECRET = process.env.JWT_SECRET || "skibidi";
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
     try {

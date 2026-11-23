@@ -110,12 +110,12 @@ export class NhanVienControler {
     static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const data = this.parseToCreateNhanVienPayload(req.body);
-            const newNXB = await NhanVienService.create(data);
+            const newNhanVien = await NhanVienService.create(data);
 
             res.status(201).json({
                 success: true,
                 message: "Thêm nhân viên thành công",
-                data: newNXB,
+                data: newNhanVien,
             });
         } catch (error) {
             next(error);

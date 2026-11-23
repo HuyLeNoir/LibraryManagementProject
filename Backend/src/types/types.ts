@@ -53,7 +53,8 @@ export interface TheoDoiMuonSach extends Timestamps {
     MASACH: string;
     NGAYMUON: string | Date;
     NGAYTRA?: string | Date | null;
-    TINHTRANG?: "Đang mượn" | "Đã trả" | "Trả quá thời hạn" | string;
+    NGAYDUKIENTRA: string | Date;
+    TINHTRANG?: "Đang chờ duyệt" | "Đang mượn" | "Đã trả" | "Trả quá thời hạn" | string;
 }
 export type UserRole = "nhanvien" | "docgia";
 
