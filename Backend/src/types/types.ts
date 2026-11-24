@@ -47,14 +47,26 @@ export interface NhanVien extends Timestamps {
 }
 
 // 5. Theo Dõi Mượn Sách
+export enum TinhTrangMuonSach {
+    DangChoDuyet = "Đang chờ duyệt",
+    ChoNhanSach = "Đã duyệt chờ nhận sách",
+    KhongDenNhanSach = "Đã huỷ do không đến nhận sách trong vòng 24h",
+    DangMuon = "Đang mượn",
+    DangMuonQuaThoiHan = "Đang mượn quá thời hạn cho phép",
+    DaTra = "Đã trả",
+    TraQuaThoiHan = "Trả quá thời hạn",
+}
 export interface TheoDoiMuonSach extends Timestamps {
-    _id?: string;
+    _id?: string; //fuick this
     MADOCGIA: string;
     MASACH: string;
-    NGAYMUON: string | Date;
-    NGAYTRA?: string | Date | null;
-    NGAYDUKIENTRA: string | Date;
-    TINHTRANG?: "Đang chờ duyệt" | "Đang mượn" | "Đã trả" | "Trả quá thời hạn" | string;
+    NGAYTAOYEUCAU: string | Date;
+    NGAYDUYET?: string | Date;
+    NGAYMUON?: string | Date; //untill the request get approved
+    NGAYTRA?: string | Date | null; //until book loaner give it back
+    NGAYDUKIENTRA?: string | Date; //untill the request get approved
+    TINHTRANG: TinhTrangMuonSach; //every request should have status
+    TIENPHAT?: number;
 }
 export type UserRole = "nhanvien" | "docgia";
 

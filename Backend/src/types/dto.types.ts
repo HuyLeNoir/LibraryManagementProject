@@ -19,7 +19,10 @@ export type CreateNhanVienPayload = Omit<NhanVien, BaseSystemFields> & {
 };
 export type UpdateNhanVienPayload = Partial<Omit<CreateNhanVienPayload, BaseSystemFields | "MSNV">>;
 
-export type CreateMuonSachPayload = Omit<TheoDoiMuonSach, BaseSystemFields | "NGAYTRA">;
+export type CreateMuonSachPayload = Omit<
+    TheoDoiMuonSach,
+    BaseSystemFields | "NGAYTRA" | "NGAYDUYET" | "NGAYMUON" | "NGAYTRA" | "NGAYDUKIENTRA"
+>;
 export type TraSachPayload = {
     NGAYTRA?: string | Date;
 };

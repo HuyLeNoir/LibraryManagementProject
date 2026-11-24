@@ -6,21 +6,35 @@ import {
     TheoDoiMuonSachChiTiet,
 } from "../services/theodoimuonsach.service.js";
 import { CreateMuonSachPayload, UpdateMuonSachPayload } from "../types/dto.types.js";
-import { TheoDoiMuonSach } from "../types/types.js";
+import { TheoDoiMuonSach, TinhTrangMuonSach } from "../types/types.js";
+import { isEnumValue } from "../utils/utils.js";
 
 export class TheoDoiMuonSachController {
     // GET /api/theo-doi-muon-sach
     static async GetAll(
-        req: Request<{}, {}, {}, { page?: string; limit?: string; keyword?: string }>,
+        req: Request<
+            {},
+            {},
+            {},
+            { page?: string; limit?: string; keyword?: string; tinhtrang?: string }
+        >,
         res: Response<ApiResponse<TheoDoiMuonSachChiTiet[]>>,
         next: NextFunction,
     ): Promise<void> {
         try {
             const keyword = typeof req.query.keyword === "string" ? req.query.keyword.trim() : "";
-            const page = parseInt(req.query.page as string, 10) || 1;
-            const limit = parseInt(req.query.limit as string, 10) || 10;
+            const tinhtrang = isEnumValue(TinhTrangMuonSach, req.query.tinhtrang)
+                ? req.query.tinhtrang
+                : null;
+            const parsedPage =
+                typeof req.query.page === "string" ? parseInt(req.query.page, 10) : NaN;
+            const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
-            const result = await TheoDoiMuonSachService.getAll(page, limit, keyword);
+            const parsedLimit =
+                typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : NaN;
+            const limit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+
+            const result = await TheoDoiMuonSachService.getAll(page, limit, keyword, tinhtrang);
 
             res.status(200).json({
                 success: true,
@@ -33,7 +47,7 @@ export class TheoDoiMuonSachController {
         }
     }
 
-    // GET /api/theo-doi-muon-sach/expired
+    // GET /api/theo-doi-muon-sach/
     static async GetExpired(
         req: Request<{}, {}, {}, { page?: string; limit?: string; keyword?: string }>,
         res: Response<ApiResponse<TheoDoiMuonSachChiTiet[]>>,
@@ -63,7 +77,7 @@ export class TheoDoiMuonSachController {
             { maDocGia: string },
             {},
             {},
-            { tinhTrang?: string; page?: string; limit?: string }
+            { tinhtrang?: string; page?: string; limit?: string }
         >,
         res: Response<ApiResponse<TheoDoiMuonSachChiTiet[]>>,
         next: NextFunction,
@@ -73,13 +87,16 @@ export class TheoDoiMuonSachController {
             if (!(req.user.maDocGia === maDocGia)) {
                 throw new AppError("Bạn không thể xem lịch sử mượn của người khác", 403);
             }
-            const tinhTrang =
-                typeof req.query.tinhTrang === "string" && req.query.tinhTrang.trim().length > 0
-                    ? req.query.tinhTrang.trim()
-                    : null;
-            const page = parseInt(req.query.page as string, 10) || 1;
-            const limit = parseInt(req.query.limit as string, 10) || 10;
+            const tinhTrang = isEnumValue(TinhTrangMuonSach, req.query.tinhtrang)
+                ? req.query.tinhtrang
+                : null;
+            const parsedPage =
+                typeof req.query.page === "string" ? parseInt(req.query.page, 10) : NaN;
+            const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
+            const parsedLimit =
+                typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : NaN;
+            const limit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
             const result = await TheoDoiMuonSachService.getByMaDocGia(
                 maDocGia,
                 tinhTrang,
@@ -118,10 +135,13 @@ export class TheoDoiMuonSachController {
         }
     }
 
-    // POST /api/muon-sach
+    // POST /api/muon-sach (docgia) //tao phieu muon
     static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const data = TheoDoiMuonSachController.parseToCreateMuonSachPayload(req.body);
+            if (data.TINHTRANG !== TinhTrangMuonSach.DangChoDuyet) {
+                data.TINHTRANG = TinhTrangMuonSach.DangChoDuyet;
+            }
             const created = await TheoDoiMuonSachService.create(data);
 
             res.status(201).json({
@@ -133,7 +153,6 @@ export class TheoDoiMuonSachController {
             next(error);
         }
     }
-
     // PUT /api/muon-sach/:maDocGia/:maSach
     static async update(
         req: Request<{ maDocGia: string; maSach: string }>,
@@ -154,7 +173,51 @@ export class TheoDoiMuonSachController {
             next(error);
         }
     }
+    // PUT /api/muon-sach/approve/:maDocGia/:maSach/
+    static async approve(
+        req: Request<{ maDocGia: string; maSach: string }>,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const { maDocGia, maSach } = req.params;
+            if (!maDocGia || !maSach) {
+                throw new AppError("Mã đọc giả và mã sách không được rỗng");
+            }
+            const data = {
+                TINHTRANG: TinhTrangMuonSach.ChoNhanSach,
+            };
+            const updated = await TheoDoiMuonSachService.update(maDocGia, maSach, data);
 
+            res.status(200).json({
+                success: true,
+                message: "Cập nhật phiếu mượn sách thành công",
+                data: updated,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+    // PUT /api/muon-sach/:maDocGia/:maSach/returnBook
+    static async returnBook(
+        req: Request<{ maDocGia: string; maSach: string }>,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const { maDocGia, maSach } = req.params;
+            const data = TheoDoiMuonSachController.parseToUpdateMuonSachPayload(req.body);
+            const updated = await TheoDoiMuonSachService.update(maDocGia, maSach, data);
+
+            res.status(200).json({
+                success: true,
+                message: "Cập nhật phiếu mượn sách thành công",
+                data: updated,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
     // DELETE /api/muon-sach/:maDocGia/:maSach
     static async delete(
         req: Request<{ maDocGia: string; maSach: string }>,
