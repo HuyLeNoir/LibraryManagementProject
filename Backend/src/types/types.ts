@@ -19,6 +19,7 @@ export interface Sach extends Timestamps {
     MASACH: string;
     TENSACH: string;
     DONGIA: number;
+    BIASACH?: string;
     SOQUYEN: number;
     NAMXUATBAN: number;
     MANXB: string;
@@ -49,6 +50,7 @@ export interface NhanVien extends Timestamps {
 // 5. Theo Dõi Mượn Sách
 export enum TinhTrangMuonSach {
     DangChoDuyet = "Đang chờ duyệt",
+    TuChoi = "Từ chối cho mượn",
     ChoNhanSach = "Đã duyệt chờ nhận sách",
     KhongDenNhanSach = "Đã huỷ do không đến nhận sách trong vòng 24h",
     DangMuon = "Đang mượn",
@@ -78,6 +80,7 @@ export interface LoginResult<T = unknown> {
 
 export interface JwtPayloadData {
     MSNV?: string;
+    MADG?: string;
     role: UserRole;
     chucVu?: string;
 }

@@ -4,8 +4,9 @@ import { TheoDoiMuonSachModel, ITheoDoiMuonSachDocument } from "../models/theodo
 import { CreateMuonSachPayload, UpdateMuonSachPayload } from "../types/dto.types.js";
 import { TheoDoiMuonSach, TinhTrangMuonSach } from "../types/types.js";
 import mongoose, { PipelineStage } from "mongoose";
-import { calculateOverdueFee, escapeRegex, isEnumValue, isNonEmptyString } from "../utils/utils.js";
+import { calculateOverdueFee, escapeRegex } from "../utils/utils.js";
 import { SachModel } from "../models/sach.model.js";
+import { createMuonSachSchema, parsePayload, updateMuonSachSchema } from "../validators/schemas.js";
 interface DanhSachMuon {
     DS_Muon: TheoDoiMuonSachChiTiet[];
     pagination: PaginatedData;
@@ -26,16 +27,13 @@ export class TheoDoiMuonSachService {
         if (tinhTrangMuonSach !== null && tinhTrangMuonSach !== undefined) {
             initialMatch.TINHTRANG = tinhTrangMuonSach;
         }
-        // {TINHTRANG: tinhtrangmuonsach}
-        if (keyword.length > 0) {
-            initialMatch.$or = [{ MASACH: keyword }, { MADOCGIA: keyword }];
-        }
         const postLookupMatch: Record<string, unknown> = {};
-        if (keyword.length > 0) {
-            const regex = new RegExp(escapeRegex(keyword), "i");
+        const trimmedKeyword = keyword.trim();
+        if (trimmedKeyword.length > 0) {
+            const regex = new RegExp(escapeRegex(trimmedKeyword), "i");
             postLookupMatch.$or = [
-                { MASACH: keyword },
-                { MADOCGIA: keyword },
+                { MASACH: trimmedKeyword },
+                { MADOCGIA: trimmedKeyword },
                 { TENSACH: regex },
                 { TENDOCGIA: regex },
             ];
@@ -77,10 +75,21 @@ export class TheoDoiMuonSachService {
                     MASACH: 1,
                     TENSACH: { $ifNull: ["$SACH_MATCHED.TENSACH", ""] },
                     MADOCGIA: 1,
-                    TENDOCGIA: { $ifNull: ["$DOCGIA_MATCHED.TENDOCGIA", ""] },
+                    TENDOCGIA: {
+                        $trim: {
+                            input: {
+                                $concat: [
+                                    { $ifNull: ["$DOCGIA_MATCHED.HOLOT", ""] },
+                                    " ",
+                                    { $ifNull: ["$DOCGIA_MATCHED.TEN", ""] },
+                                ],
+                            },
+                        },
+                    },
                     NGAYMUON: 1,
                     NGAYTRA: { $ifNull: ["$NGAYTRA", null] },
                     TINHTRANG: 1,
+                    createdAt: 1,
                 },
             },
             ...(Object.keys(postLookupMatch).length > 0 ? [{ $match: postLookupMatch }] : []),
@@ -116,8 +125,8 @@ export class TheoDoiMuonSachService {
     }
     // GET BY ID
     static async getById(MADOCGIA: string, MASACH: string): Promise<TheoDoiMuonSachChiTiet | null> {
-        if (!MASACH || MADOCGIA) {
-            throw new AppError("Không có mã sách hoặc mã đọc giả", 404);
+        if (!MASACH?.trim() || !MADOCGIA?.trim()) {
+            throw new AppError("Không có mã sách hoặc mã đọc giả", 400);
         }
         const pipeline: PipelineStage[] = [
             {
@@ -160,7 +169,17 @@ export class TheoDoiMuonSachService {
                     MASACH: 1,
                     TENSACH: { $ifNull: ["$sach_matched.TENSACH", ""] },
                     MADOCGIA: 1,
-                    TENDOCGIA: { $ifNull: ["$docgia_matched.TENDOCGIA", ""] },
+                    TENDOCGIA: {
+                        $trim: {
+                            input: {
+                                $concat: [
+                                    { $ifNull: ["$docgia_matched.HOLOT", ""] },
+                                    " ",
+                                    { $ifNull: ["$docgia_matched.TEN", ""] },
+                                ],
+                            },
+                        },
+                    },
                     NGAYTAOYEUCAU: 1,
                     NGAYMUON: 1,
                     NGAYTRA: { $ifNull: ["$NGAYTRA", null] },
@@ -212,6 +231,7 @@ export class TheoDoiMuonSachService {
                     MASACH: 1,
                     NGAYMUON: 1,
                     TINHTRANG: 1,
+                    NGAYDUKIENTRA: 1,
                     NGAYTRA: { $ifNull: ["$NGAYTRA", null] },
                     TENSACH: { $ifNull: ["$Sach_matched.TENSACH", ""] },
                 },
@@ -220,9 +240,6 @@ export class TheoDoiMuonSachService {
 
         const muon = await TheoDoiMuonSachModel.aggregate<TheoDoiMuonSachChiTiet>(pipeline);
         const total = await TheoDoiMuonSachModel.countDocuments(matchCondition);
-        if (total == 0) {
-            throw new AppError("Khách hàng chưa mượn sách", 400);
-        }
         return {
             DS_Muon: muon,
             pagination: {
@@ -236,19 +253,60 @@ export class TheoDoiMuonSachService {
     //transaction
     static async cancelExpired(): Promise<void> {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const result = await TheoDoiMuonSachModel.updateMany(
-            {
-                TINHTRANG: TinhTrangMuonSach.ChoNhanSach, // Hoặc trạng thái chờ nhận sách
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            const expiredRecords = await TheoDoiMuonSachModel.find({
+                TINHTRANG: TinhTrangMuonSach.ChoNhanSach,
                 NGAYDUYET: { $lte: twentyFourHoursAgo },
-            },
-            {
-                $set: {
-                    TINHTRANG: TinhTrangMuonSach.KhongDenNhanSach,
+            }).session(session);
+            if (expiredRecords.length === 0) {
+                await session.commitTransaction();
+            }
+            const result = await TheoDoiMuonSachModel.updateMany(
+                {
+                    TINHTRANG: TinhTrangMuonSach.ChoNhanSach, // Hoặc trạng thái chờ nhận sách
+                    NGAYDUYET: { $lte: twentyFourHoursAgo },
                 },
-            },
-        );
-        if (result.modifiedCount > 0) {
-            console.log(`[CronJob] Đã tự động hủy ${result.modifiedCount} phiếu mượn quá hạn 24h.`);
+                {
+                    $set: {
+                        TINHTRANG: TinhTrangMuonSach.KhongDenNhanSach,
+                    },
+                },
+            );
+            if (!result) {
+                throw new AppError(
+                    "Phiếu mượn đã thay đổi trạng thái hoặc không thể từ chối duyệt",
+                    409,
+                );
+            }
+
+            const counts = expiredRecords.reduce<Record<string, number>>((acc, r) => {
+                acc[r.MASACH] = (acc[r.MASACH] || 0) + 1;
+                return acc;
+            }, {});
+
+            await SachModel.bulkWrite(
+                Object.entries(counts).map(([MASACH, qty]) => ({
+                    updateOne: {
+                        filter: { MASACH },
+                        update: { $inc: { SOQUYEN: qty } },
+                    },
+                })),
+                { session },
+            );
+            // 4. Neu moi thu thanh cong -> Commit transaction
+            await session.commitTransaction();
+            if (result.modifiedCount > 0) {
+                console.log(
+                    `[CronJob] Đã tự động hủy ${result.modifiedCount} phiếu mượn quá hạn 24h.`,
+                );
+            }
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
         }
     }
     //transaction
@@ -299,6 +357,98 @@ export class TheoDoiMuonSachService {
         }
         return updatedRequest;
     }
+    static async reject(MADOCGIA: string, MASACH: string) {
+        const maDocGia = MADOCGIA?.trim() ?? "";
+        const maSach = MASACH?.trim() ?? "";
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            const updated = await TheoDoiMuonSachModel.findOneAndUpdate(
+                {
+                    MADOCGIA: maDocGia,
+                    MASACH: maSach,
+                    TINHTRANG: TinhTrangMuonSach.DangChoDuyet,
+                },
+                {
+                    $set: {
+                        TINHTRANG: TinhTrangMuonSach.TuChoi,
+                        NGAYDUYET: new Date(),
+                    },
+                },
+                {
+                    new: true,
+                    runValidators: true,
+                },
+            );
+
+            if (!updated) {
+                throw new AppError(
+                    "Phiếu mượn đã thay đổi trạng thái hoặc không thể từ chối duyệt",
+                    409,
+                );
+            }
+
+            const updatedBook = await SachModel.findOneAndUpdate(
+                {
+                    MASACH: MASACH,
+                },
+                {
+                    $inc: { SOQUYEN: 1 },
+                },
+                {
+                    new: true,
+                    session, // DAT SESSION VAO QUERY
+                },
+            );
+
+            if (!updatedBook) {
+                // Neu sach da het hoac khong tim thay sach, ném loi de nhay vao catch -> Rollback
+                throw new AppError("Sách trong kho đã hết hoặc không tìm thấy sách", 400);
+            }
+
+            // 4. Neu moi thu thanh cong -> Commit transaction
+            await session.commitTransaction();
+            return updated;
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
+        }
+    }
+    static async receive(MADOCGIA: string, MASACH: string) {
+        const maDocGia = MADOCGIA?.trim() ?? "";
+        const maSach = MASACH?.trim() ?? "";
+        // 2. Cap nhat phieu muon sang trang thai ChoNhanSach
+        const now = new Date();
+        const updatedRequest = await TheoDoiMuonSachModel.findOneAndUpdate(
+            {
+                MADOCGIA: maDocGia,
+                MASACH: maSach,
+                TINHTRANG: TinhTrangMuonSach.ChoNhanSach,
+            },
+            {
+                $set: {
+                    TINHTRANG: TinhTrangMuonSach.DangMuon,
+                    NGAYMUON: now,
+                    NGAYDUKIENTRA: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+                },
+            },
+            {
+                new: true,
+                runValidators: true,
+            },
+        );
+
+        if (!updatedRequest) {
+            throw new AppError(
+                "Phiêu mượn không tồn tại hoặc không ở trạng thái chờ nhận sách",
+                404,
+            );
+        }
+        return updatedRequest;
+    }
+
     //transaction: done
     static async confirmReturnBook(MADOCGIA: string, MASACH: string) {
         const NGAYTRA = new Date();
@@ -392,17 +542,26 @@ export class TheoDoiMuonSachService {
         MADOCGIA: string;
         MASACH: string;
     }> {
-        if (!data || Object.keys(data).length === 0) {
-            throw new AppError("Không có dữ liệu để cập nhật", 400);
-        }
-        if (!data.MASACH || !data.MADOCGIA) {
-            throw new AppError("Không nhận được mã sách hoặc mã độc giả", 400);
-        }
-        const MASACH = data.MASACH;
-        const MADOCGIA = data.MADOCGIA;
+        const parsed = parsePayload(createMuonSachSchema, data);
+        const MASACH = parsed.MASACH;
+        const MADOCGIA = parsed.MADOCGIA;
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
+            const activeStatuses = [
+                TinhTrangMuonSach.DangChoDuyet,
+                TinhTrangMuonSach.ChoNhanSach,
+                TinhTrangMuonSach.DangMuon,
+                TinhTrangMuonSach.DangMuonQuaThoiHan,
+            ];
+            const DangMuon = await TheoDoiMuonSachModel.findOne({
+                MADOCGIA,
+                MASACH,
+                TINHTRANG: { $in: activeStatuses },
+            });
+            if (DangMuon) {
+                throw new AppError("Bạn chưa trả sách!!", 400);
+            }
             const updatedBook = await SachModel.findOneAndUpdate(
                 { MASACH, SOQUYEN: { $gt: 0 } },
                 { $inc: { SOQUYEN: -1 } },
@@ -495,10 +654,21 @@ export class TheoDoiMuonSachService {
                     MASACH: 1,
                     TENSACH: { $ifNull: ["$SACH_MATCHED.TENSACH", ""] },
                     MADOCGIA: 1,
-                    TENDOCGIA: { $ifNull: ["$DOCGIA_MATCHED.TENDOCGIA", ""] },
+                    TENDOCGIA: {
+                        $trim: {
+                            input: {
+                                $concat: [
+                                    { $ifNull: ["$DOCGIA_MATCHED.HOLOT", ""] },
+                                    " ",
+                                    { $ifNull: ["$DOCGIA_MATCHED.TEN", ""] },
+                                ],
+                            },
+                        },
+                    },
                     NGAYMUON: 1,
                     NGAYTRA: { $ifNull: ["$NGAYTRA", null] },
                     TINHTRANG: 1,
+                    createdAt: 1,
                 },
             },
             ...(Object.keys(postLookupMatch).length > 0 ? [{ $match: postLookupMatch }] : []),
@@ -538,7 +708,8 @@ export class TheoDoiMuonSachService {
         MASACH: string,
         data: UpdateMuonSachPayload,
     ): Promise<Omit<TheoDoiMuonSach, "_id"> | null> {
-        return await TheoDoiMuonSachModel.findOneAndUpdate({ MADOCGIA, MASACH }, data, {
+        const parsed = parsePayload(updateMuonSachSchema, data);
+        return await TheoDoiMuonSachModel.findOneAndUpdate({ MADOCGIA, MASACH }, parsed, {
             returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         });

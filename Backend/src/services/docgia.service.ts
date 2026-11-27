@@ -3,7 +3,8 @@ import { CreateDocGiaPayload, UpdateDocGiaPayload } from "../types/dto.types.js"
 import { AppError } from "../utils/appError.js";
 import { DocGia } from "../types/types.js";
 import { PaginatedData } from "../types/api.types.js";
-import { escapeRegex } from "../utils/utils.js";
+import { escapeRegex, hashPassword } from "../utils/utils.js";
+import { createDocGiaSchema, parsePayload, updateDocGiaSchema } from "../validators/schemas.js";
 export interface DanhSachDocGia {
     DS_DocGia: DocGia[];
     pagination: PaginatedData;
@@ -65,10 +66,10 @@ export class DocGiaService {
         return {
             DS_DocGia: this.toDocGiaList(rawDocs),
             pagination: {
-                page,
-                limit,
+                page: safePage,
+                limit: safeLimit,
                 total,
-                totalPages: Math.ceil(total / limit),
+                totalPages: Math.ceil(total / safeLimit),
             },
         };
     }
@@ -86,11 +87,10 @@ export class DocGiaService {
 
     // CREATE
     static async create(data: Omit<CreateDocGiaPayload, "MADOCGIA">): Promise<DocGia> {
-        if (!data || Object.keys(data).length === 0) {
-            throw new AppError("Không có dữ liệu để tạo", 404);
-        }
+        const parsed = parsePayload(createDocGiaSchema, data);
+        parsed.PASSWORD = hashPassword(parsed.PASSWORD);
         const MADOCGIA = await this.generateMaDocGia();
-        const createdDocGia = await DocGiaModel.create({ ...data, MADOCGIA });
+        const createdDocGia = await DocGiaModel.create({ ...parsed, MADOCGIA });
         return this.toDocGia(createdDocGia);
     }
 
@@ -99,10 +99,11 @@ export class DocGiaService {
         if (!MADOCGIA?.trim()) {
             throw new AppError("Mã độc giả không hợp lệ", 400);
         }
-        if (!data || Object.keys(data).length === 0) {
-            throw new AppError("Không có dữ liệu để cập nhật", 400);
+        const parsed = parsePayload(updateDocGiaSchema, data);
+        if (parsed.PASSWORD) {
+            parsed.PASSWORD = hashPassword(parsed.PASSWORD);
         }
-        const updatedDocGia = await DocGiaModel.findOneAndUpdate({ MADOCGIA }, data, {
+        const updatedDocGia = await DocGiaModel.findOneAndUpdate({ MADOCGIA }, parsed, {
             returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         }).lean<IDocGia>();

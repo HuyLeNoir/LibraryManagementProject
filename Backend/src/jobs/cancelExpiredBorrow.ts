@@ -3,8 +3,9 @@ import cron from "node-cron";
 import { TheoDoiMuonSachService } from "../services/theodoimuonsach.service.js";
 
 export function initCancelExpiredRequestsJob() {
+    console.log("5mins cron init");
     // Chạy mỗi 15 phút một lần: '*/15 * * * *'
-    cron.schedule("*/15 * * * *", async () => {
+    cron.schedule("*/1 * * * *", async () => {
         const [cancelResult, overdueResult] = await Promise.allSettled([
             TheoDoiMuonSachService.cancelExpired(),
             TheoDoiMuonSachService.setMuonQuaThoiHan(),

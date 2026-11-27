@@ -48,13 +48,18 @@ export class SachController {
     // POST /api/sach
     static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const data = req.body as CreateSachPayload;
-            const newNXB = await SachService.create(data);
-
+            const payload = {
+                ...req.body,
+                DONGIA: Number(req.body.DONGIA),
+                SOQUYEN: Number(req.body.SOQUYEN),
+                NAMXUATBAN: Number(req.body.NAMXUATBAN),
+                ...(req.file ? { BIASACH: `/uploads/${req.file.filename}` } : {}),
+            };
+            const data = await SachService.create(payload);
             res.status(201).json({
                 success: true,
                 message: "Thêm sách thành công",
-                data: newNXB,
+                data: data,
             });
         } catch (error) {
             next(error);
@@ -68,15 +73,21 @@ export class SachController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            const { masach } = req.params;
-            const data = req.body as UpdateSachPayload;
-
-            const updatedNXB = await SachService.update(masach, data);
+            const payload = {
+                ...req.body,
+                ...(req.body.DONGIA !== undefined ? { DONGIA: Number(req.body.DONGIA) } : {}),
+                ...(req.body.SOQUYEN !== undefined ? { SOQUYEN: Number(req.body.SOQUYEN) } : {}),
+                ...(req.body.NAMXUATBAN !== undefined
+                    ? { NAMXUATBAN: Number(req.body.NAMXUATBAN) }
+                    : {}),
+                ...(req.file ? { BIASACH: `/uploads/${req.file.filename}` } : {}),
+            };
+            const data = await SachService.update(req.params.masach, payload);
 
             res.status(200).json({
                 success: true,
                 message: "Cập nhật sách thành công",
-                data: updatedNXB,
+                data: data,
             });
         } catch (error) {
             next(error);

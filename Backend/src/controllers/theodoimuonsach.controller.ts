@@ -84,7 +84,7 @@ export class TheoDoiMuonSachController {
     ): Promise<void> {
         try {
             const { maDocGia } = req.params;
-            if (!(req.user.maDocGia === maDocGia)) {
+            if (!(req.user.MADG === maDocGia)) {
                 throw new AppError("Bạn không thể xem lịch sử mượn của người khác", 403);
             }
             const tinhTrang = isEnumValue(TinhTrangMuonSach, req.query.tinhtrang)
@@ -173,7 +173,7 @@ export class TheoDoiMuonSachController {
             next(error);
         }
     }
-    // PUT /api/muon-sach/approve/:maDocGia/:maSach/
+    // PUT /api/muon-sach/:maDocGia/:maSach/approve
     static async approve(
         req: Request<{ maDocGia: string; maSach: string }>,
         res: Response,
@@ -184,10 +184,7 @@ export class TheoDoiMuonSachController {
             if (!maDocGia || !maSach) {
                 throw new AppError("Mã đọc giả và mã sách không được rỗng");
             }
-            const data = {
-                TINHTRANG: TinhTrangMuonSach.ChoNhanSach,
-            };
-            const updated = await TheoDoiMuonSachService.update(maDocGia, maSach, data);
+            const updated = await TheoDoiMuonSachService.approve(maDocGia, maSach);
 
             res.status(200).json({
                 success: true,
@@ -198,7 +195,53 @@ export class TheoDoiMuonSachController {
             next(error);
         }
     }
-    // PUT /api/muon-sach/:maDocGia/:maSach/returnBook
+    // PUT /api/muon-sach/:maDocGia/:maSach/recieve
+
+    static async receive(
+        req: Request<{ maDocGia: string; maSach: string }>,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const { maDocGia, maSach } = req.params;
+            if (!maDocGia || !maSach) {
+                throw new AppError("Mã đọc giả và mã sách không được rỗng");
+            }
+            const updated = await TheoDoiMuonSachService.receive(maDocGia, maSach);
+
+            res.status(200).json({
+                success: true,
+                message: "Cập nhật phiếu mượn sách thành công",
+                data: updated,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+    // PUT /api/muon-sach/:maDocGia/:maSach/reject
+
+    static async reject(
+        req: Request<{ maDocGia: string; maSach: string }>,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const { maDocGia, maSach } = req.params;
+            if (!maDocGia || !maSach) {
+                throw new AppError("Mã đọc giả và mã sách không được rỗng");
+            }
+            const updated = await TheoDoiMuonSachService.reject(maDocGia, maSach);
+
+            res.status(200).json({
+                success: true,
+                message: "Cập nhật phiếu mượn sách thành công",
+                data: updated,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+    // PUT /api/muon-sach/:maDocGia/:maSach/return
     static async returnBook(
         req: Request<{ maDocGia: string; maSach: string }>,
         res: Response,

@@ -3,7 +3,10 @@ import { PaginatedData } from "../types/api.types.js";
 import { SachModel, ISachDocument } from "../models/sach.model.js";
 import { CreateSachPayload, UpdateSachPayload } from "../types/dto.types.js";
 import { Sach } from "../types/types.js";
+import fs from "fs";
+import path from "path";
 import { escapeRegex } from "../utils/utils.js";
+import { createSachSchema, parsePayload, updateSachSchema } from "../validators/schemas.js";
 export interface SachWithNXB extends Sach {
     TENNXB: string;
 }
@@ -17,6 +20,13 @@ interface DanhSachSach {
     DS_Sach: SachWithNXB[];
     pagination: PaginatedData;
 }
+function removeLocalFile(filePath?: string) {
+    if (!filePath || !filePath.startsWith("/uploads/")) return;
+    const fullPath = path.join(process.cwd(), filePath);
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+    }
+}
 export class SachService {
     private static toSachWithNXB(doc: SachAggregatedRow): SachWithNXB {
         return {
@@ -25,6 +35,7 @@ export class SachService {
             DONGIA: doc.DONGIA,
             SOQUYEN: doc.SOQUYEN,
             NAMXUATBAN: doc.NAMXUATBAN,
+            BIASACH: doc.BIASACH,
             MANXB: doc.MANXB,
             NGUONGOCTACGIA: doc.NGUONGOCTACGIA,
             TENNXB: doc.nxbInfo?.TENNXB ?? "",
@@ -36,6 +47,7 @@ export class SachService {
             TENSACH: doc.TENSACH,
             DONGIA: doc.DONGIA,
             SOQUYEN: doc.SOQUYEN,
+            BIASACH: doc.BIASACH,
             NAMXUATBAN: doc.NAMXUATBAN,
             MANXB: doc.MANXB,
             NGUONGOCTACGIA: doc.NGUONGOCTACGIA,
@@ -120,26 +132,33 @@ export class SachService {
 
     // CREATE
     static async create(data: CreateSachPayload): Promise<Sach> {
-        if (!data || Object.keys(data).length === 0) {
-            throw new AppError("Không có dữ liệu sách để cập nhật", 404);
+        const parsed = parsePayload(createSachSchema, data);
+        const existing = await SachModel.findOne({ MASACH: data.MASACH });
+        if (existing) {
+            removeLocalFile(data.BIASACH);
+            throw new AppError("Mã sách đã tồn tại", 400);
         }
-        const newSach = await SachModel.create(data);
+        const newSach = await SachModel.create(parsed);
+
         return this.toSach(newSach);
     }
 
     // UPDATE
     static async update(MASACH: string, data: UpdateSachPayload): Promise<Sach | null> {
-        if (!MASACH) {
-            throw new AppError("Không nhận được mã sách để cập nhật", 404);
+        const parsed = parsePayload(updateSachSchema, data);
+        const book = await SachModel.findOne({ MASACH: MASACH });
+        if (!book) {
+            removeLocalFile(parsed.BIASACH);
+            throw new AppError("Không tìm thấy sách", 404);
         }
-        const updatedSach = await SachModel.findOneAndUpdate({ MASACH }, data, {
-            returnDocument: "after", // Trả về document sau khi đã update
-            runValidators: true, // Kiểm tra validate schema khi update
-        });
-        if (!updatedSach) {
-            throw new AppError("Không cập nhật được sách", 404);
+
+        // Nếu có upload ảnh mới thì xóa ảnh cũ đi
+        if (parsed.BIASACH && book.BIASACH && parsed.BIASACH !== book.BIASACH) {
+            removeLocalFile(book.BIASACH);
         }
-        return this.toSach(updatedSach);
+
+        Object.assign(book, parsed);
+        return this.toSach(await book.save());
     }
 
     // DELETE
@@ -149,8 +168,9 @@ export class SachService {
         }
         const deletedSach = await SachModel.findOneAndDelete({ MASACH });
         if (!deletedSach) {
-            throw new AppError("Không xoá được sách", 404);
+            throw new AppError("Không xoá được sách", 500);
         }
+        removeLocalFile(deletedSach.BIASACH);
         return this.toSach(deletedSach);
     }
 }

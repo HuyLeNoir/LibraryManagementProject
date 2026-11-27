@@ -31,8 +31,8 @@ export class AuthController {
         next: NextFunction,
     ) {
         try {
-            const { MADOCGIA, PASSWORD } = req.body;
-            const result = await AuthService.LoginDocGia(MADOCGIA, PASSWORD);
+            const { MADOCGIA, Password } = req.body;
+            const result = await AuthService.LoginDocGia(MADOCGIA, Password);
 
             res.status(200).json({
                 success: true,

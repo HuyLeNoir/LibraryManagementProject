@@ -13,18 +13,15 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             throw new AppError("Bạn chưa đăng nhập hoặc thiếu token", 401);
         }
-
         const token = authHeader.split(" ")[1]?.trim();
         if (!token) {
             throw new AppError("Token không hợp lệ", 401);
         }
-
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayloadData;
 
         if (!decoded?.role) {
             throw new AppError("Payload trong token không hợp lệ", 401);
         }
-
         req.user = decoded;
         next();
     } catch (error) {

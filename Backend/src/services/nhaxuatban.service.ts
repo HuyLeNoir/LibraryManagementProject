@@ -4,6 +4,11 @@ import { NhaXuatBanModel, INhaXuatBanDocument } from "../models/nhaxuatban.model
 import { CreateNhaXuatBanPayload, UpdateNhaXuatBanPayload } from "../types/dto.types.js";
 import { NhaXuatBan } from "../types/types.js";
 import { escapeRegex } from "../utils/utils.js";
+import {
+    createNhaXuatBanSchema,
+    parsePayload,
+    updateNhaXuatBanSchema,
+} from "../validators/schemas.js";
 interface DanhSachNhaXuatBan {
     DS_NXB: NhaXuatBan[];
     pagination: PaginatedData;
@@ -63,15 +68,14 @@ export class NhaXuatBanService {
 
     // CREATE
     static async create(data: CreateNhaXuatBanPayload): Promise<NhaXuatBan> {
-        if (!data || Object.keys(data).length === 0) {
-            throw new AppError("Không có dữ liệu để cập nhật", 404);
-        }
-        return this.toNhaXuatBan(await NhaXuatBanModel.create(data));
+        const parsed = parsePayload(createNhaXuatBanSchema, data);
+        return this.toNhaXuatBan(await NhaXuatBanModel.create(parsed));
     }
 
     // UPDATE
     static async update(MANXB: string, data: UpdateNhaXuatBanPayload): Promise<NhaXuatBan | null> {
-        const updatedNXB = await NhaXuatBanModel.findOneAndUpdate({ MANXB }, data, {
+        const parsed = parsePayload(updateNhaXuatBanSchema, data);
+        const updatedNXB = await NhaXuatBanModel.findOneAndUpdate({ MANXB }, parsed, {
             returnDocument: "after", // Trả về document sau khi đã update
             runValidators: true, // Kiểm tra validate schema khi update
         });

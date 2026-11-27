@@ -6,6 +6,7 @@ const sachSchema = new Schema<ISachDocument>(
     {
         MASACH: { type: String, required: true, unique: true, trim: true },
         TENSACH: { type: String, required: true, trim: true },
+        BIASACH: { type: String, required: true, trim: true, default: "" },
         DONGIA: { type: Number, required: true, min: 0 },
         SOQUYEN: { type: Number, required: true, min: 0, default: 0 },
         MANXB: { type: String, required: true, trim: true },

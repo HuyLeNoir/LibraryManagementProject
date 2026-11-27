@@ -7,10 +7,12 @@ import NhaXuatBanRoute from "./routes/nhaxuatban.routes.js";
 import SachRoutes from "./routes/sach.routes.js";
 import TheoDoiMuonSachRoutes from "./routes/theodoimuonsach.routes.js";
 import AuthRoutes from "./routes/auth.routes.js";
+import path from "path";
 const app: Express = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL || "*", credentials: true }));
 app.use(express.json());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api", AuthRoutes);
 app.use("/api/docgia", docgiaRoutes);
 app.use("/api/nhanvien", NhanVienRoutes);

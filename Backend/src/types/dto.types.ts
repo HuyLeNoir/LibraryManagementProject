@@ -1,29 +1,32 @@
 // types/dto.types.ts
-import { Sach, DocGia, NhaXuatBan, NhanVien, TheoDoiMuonSach } from "./types.js";
+import { z } from "zod";
+import {
+    createDocGiaSchema,
+    createMuonSachSchema,
+    createNhanVienSchema,
+    createNhaXuatBanSchema,
+    createSachSchema,
+    updateDocGiaSchema,
+    updateMuonSachSchema,
+    updateNhanVienSchema,
+    updateNhaXuatBanSchema,
+    updateSachSchema,
+} from "../validators/schemas.js";
 
-type BaseSystemFields = "_id" | "createdAt" | "updatedAt";
+export type CreateSachPayload = z.infer<typeof createSachSchema>;
+export type UpdateSachPayload = z.infer<typeof updateSachSchema>;
 
-export type CreateSachPayload = Omit<Sach, BaseSystemFields>;
-export type UpdateSachPayload = Partial<CreateSachPayload>;
+export type CreateDocGiaPayload = z.infer<typeof createDocGiaSchema>;
+export type UpdateDocGiaPayload = z.infer<typeof updateDocGiaSchema>;
 
-export type CreateDocGiaPayload = Omit<DocGia, BaseSystemFields | "MADOCGIA"> & {
-    PASSWORD: string;
-};
-export type UpdateDocGiaPayload = Partial<CreateDocGiaPayload>;
+export type CreateNhaXuatBanPayload = z.infer<typeof createNhaXuatBanSchema>;
+export type UpdateNhaXuatBanPayload = z.infer<typeof updateNhaXuatBanSchema>;
 
-export type CreateNhaXuatBanPayload = Omit<NhaXuatBan, BaseSystemFields>;
-export type UpdateNhaXuatBanPayload = Partial<CreateNhaXuatBanPayload>;
+export type CreateNhanVienPayload = z.infer<typeof createNhanVienSchema>;
+export type UpdateNhanVienPayload = z.infer<typeof updateNhanVienSchema>;
 
-export type CreateNhanVienPayload = Omit<NhanVien, BaseSystemFields> & {
-    Password: string; // Chỉ có lúc tạo mới/đăng ký
-};
-export type UpdateNhanVienPayload = Partial<Omit<CreateNhanVienPayload, BaseSystemFields | "MSNV">>;
-
-export type CreateMuonSachPayload = Omit<
-    TheoDoiMuonSach,
-    BaseSystemFields | "NGAYTRA" | "NGAYDUYET" | "NGAYMUON" | "NGAYTRA" | "NGAYDUKIENTRA"
->;
+export type CreateMuonSachPayload = z.infer<typeof createMuonSachSchema>;
 export type TraSachPayload = {
     NGAYTRA?: string | Date;
 };
-export type UpdateMuonSachPayload = Partial<Omit<TheoDoiMuonSach, BaseSystemFields>>;
+export type UpdateMuonSachPayload = z.infer<typeof updateMuonSachSchema>;

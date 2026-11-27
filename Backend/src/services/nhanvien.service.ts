@@ -4,6 +4,7 @@ import { NhanVienModel, INhanVienDocument } from "../models/nhanvien.model.js";
 import { CreateNhanVienPayload, UpdateNhanVienPayload } from "../types/dto.types.js";
 import { NhanVien } from "../types/types.js";
 import { escapeRegex, hashPassword } from "../utils/utils.js";
+import { createNhanVienSchema, parsePayload, updateNhanVienSchema } from "../validators/schemas.js";
 
 interface DanhSachNhanVien {
     DS_NhanVien: NhanVien[];
@@ -63,13 +64,9 @@ export class NhanVienService {
 
     // CREATE
     static async create(data: CreateNhanVienPayload): Promise<INhanVienDocument> {
-        if (!data || Object.keys(data).length === 0) {
-            throw new AppError("Không có dữ liệu để cập nhật", 404);
-        }
-        if (data.Password) {
-            data.Password = hashPassword(data.Password);
-        }
-        return await NhanVienModel.create(data);
+        const parsed = parsePayload(createNhanVienSchema, data);
+        parsed.Password = hashPassword(parsed.Password);
+        return await NhanVienModel.create(parsed);
     }
 
     // UPDATE
@@ -77,9 +74,13 @@ export class NhanVienService {
         MSNV: string,
         data: UpdateNhanVienPayload,
     ): Promise<INhanVienDocument | null> {
+        const parsed = parsePayload(updateNhanVienSchema, data);
+        if (parsed.Password) {
+            parsed.Password = hashPassword(parsed.Password);
+        }
         const updatedNhanVien = await NhanVienModel.findOneAndUpdate(
             { MSNV },
-            { $set: data },
+            { $set: parsed },
             {
                 returnDocument: "after", // Trả về document sau khi đã update
                 runValidators: true, // Kiểm tra validate schema khi update

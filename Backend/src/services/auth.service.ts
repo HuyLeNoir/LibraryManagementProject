@@ -7,16 +7,20 @@ import { DocGiaModel } from "../models/docgia.model.js";
 import { verify } from "node:crypto";
 import { hashPassword, verifyPassword } from "../utils/utils.js";
 import { DocGiaService } from "./docgia.service.js";
+import {
+    createDocGiaSchema,
+    loginDocGiaSchema,
+    loginNhanVienSchema,
+    parsePayload,
+} from "../validators/schemas.js";
 const JWT_SECRET = process.env.JWT_SECRET || "skibidi";
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "1d") as SignOptions["expiresIn"];
 
 export class AuthService {
     static async LoginNhanVien(MSNV: string, Password: string): Promise<LoginResult<NhanVien>> {
-        if (!MSNV || !Password) {
-            throw new AppError("Vui lòng nhập mã số nhân viên và mật khẩu", 400);
-        }
+        const parsed = parsePayload(loginNhanVienSchema, { MSNV, Password });
 
-        const nhanvien = await NhanVienModel.findOne({ MSNV: MSNV.trim() }).select("+Password");
+        const nhanvien = await NhanVienModel.findOne({ MSNV: parsed.MSNV }).select("+Password");
         if (!nhanvien) {
             throw new AppError("Mã số nhân viên hoặc mật khẩu không đúng", 401);
         }
@@ -49,11 +53,9 @@ export class AuthService {
         };
     }
     static async LoginDocGia(MADOCGIA: string, Password: string): Promise<LoginResult<DocGia>> {
-        if (!MADOCGIA) {
-            throw new AppError("Vui lòng nhập mã đọc giả", 400);
-        }
+        const parsed = parsePayload(loginDocGiaSchema, { MADOCGIA, Password });
 
-        const docgia = await DocGiaModel.findOne({ MADOCGIA }).select("+PASSWORD");
+        const docgia = await DocGiaModel.findOne({ MADOCGIA: parsed.MADOCGIA }).select("+PASSWORD");
         if (!docgia) {
             throw new AppError("Không tồn tại đọc giả", 401);
         }
@@ -64,6 +66,7 @@ export class AuthService {
         }
 
         const payload: JwtPayloadData = {
+            MADG: docgia.MADOCGIA,
             role: "docgia",
         };
 
@@ -86,13 +89,12 @@ export class AuthService {
         };
     }
     static async RegisterDocGia(Payload: CreateDocGiaPayload): Promise<LoginResult<DocGia>> {
-        if (!Payload) {
-            throw new AppError("Vui Không có payload", 400);
-        }
-        Payload.PASSWORD = hashPassword(Payload.PASSWORD);
+        const parsed = parsePayload(createDocGiaSchema, Payload);
+        parsed.PASSWORD = hashPassword(parsed.PASSWORD);
         const MADOCGIA = await DocGiaService.generateMaDocGia();
-        const docgia = await DocGiaModel.create({ ...Payload, MADOCGIA });
+        const docgia = await DocGiaModel.create({ ...parsed, MADOCGIA });
         const payload: JwtPayloadData = {
+            MADG: MADOCGIA,
             role: "docgia",
         };
         const token = jwt.sign(payload, JWT_SECRET, {
